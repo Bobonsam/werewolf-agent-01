@@ -1,17 +1,50 @@
-# werewolf-agent-01
+# Werewolf Agent 🐺
 
-[![make.fun · werewolf-agent-01](https://make.fun/badge/werewolf-agent-01.svg)](https://make.fun/bounty/werewolf-agent-01?utm_source=github&utm_medium=readme&utm_campaign=werewolf-agent-01)
-[![rank](https://make.fun/badge/werewolf-agent-01/Bobonsam/werewolf-agent-01/rank.svg)](https://make.fun/bounty/werewolf-agent-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=werewolf-agent-01)
-[![reward](https://make.fun/badge/werewolf-agent-01/Bobonsam/werewolf-agent-01/reward.svg)](https://make.fun/bounty/werewolf-agent-01?utm_source=github&utm_medium=readme&utm_campaign=werewolf-agent-01)
+A rule-based AI agent that plays **Werewolf** (the social deduction game) — built for the [make.fun](https://make.fun) `werewolf-agent-01` competition.
 
-A rule-based Werewolf agent in pure Python 3.13 standard library — no model calls, no API keys. It tracks votes, exiles, deaths, claims and accusations from the game log into per-seat suspicion scores, treats seer claims as first-class evidence, abstains on weak evidence, and plays deterministically from the trial seed. Local practice trials scored 633 / 467 / 600 (mean 567) against the house baseline of 367.
+No LLM calls. No API keys. Pure Python 3 stdlib, fully deterministic.
+
+## How it plays
+
+8 players: 2 werewolves, 1 seer, 1 doctor, 4 villagers. 30 games per trial (15 as wolf, 15 as village) against 7 house players.
+
+The agent parses the full public log every decision into per-seat suspicion scores, then acts by role:
+
+- **Seer** — checks the most suspicious unchecked player each night, reveals a wolf the moment one is found. Never announces "not a wolf" clears (that gets the seer killed).
+- **Doctor** — protects the seer claimant first, then the loudest accuser.
+- **Werewolf** — matches its partner's kill, kills seer claimants first, votes the most exilable villager by day, and buses a doomed partner only.
+- **Villager** — votes the top suspect on real evidence; abstains on weak evidence instead of exiling a random villager — except at ≤5 players alive, where the village must take its best shot.
+
+Suspicion scoring: votes, exiles, accusations, and seer claims are weighted by day and by whether the accused turned out to be a wolf. Proven liars are ignored. Seer claims are first-class evidence.
+
+## Results (local practice trials)
+
+| Trial | Score | Wolf | Village |
+|---|---|---|---|
+| 0 | 667 | 13/15 | 7/15 |
+| 1 | 467 | 12/15 | 2/15 |
+| 2 | 633 | 13/15 | 6/15 |
+| **Mean** | **589** | **38/45** | **15/45** |
+
+House baseline: **367**. The agent beats it on every trial.
+
+Wolf play is the strength (38/45). Village play is the known weakness — the agent trusts seer claims that sometimes turn out to be wolf bluffs.
 
 ## Run it
 
-```sh
+```bash
+# needs the make.fun kit env (MAKEFUN_PROMPT_FILE, MAKEFUN_TRIAL_SEED, MAKEFUN_ENV_URL)
 python3 -P -s main.py
 ```
 
----
+Stdlib only — no dependencies to install. Deterministic: same seed, same game.
 
-<sub>Entered on [make.fun](https://make.fun/?ref=q114g8q7&utm_source=github&utm_medium=readme&utm_campaign=werewolf-agent-01) · AI agents build software for cash rewards</sub>
+## Structure
+
+- `main.py` — the whole agent (609 lines): xoshiro256** RNG, game-state model, log parsing, suspicion scoring, per-role logic, decision loop, env glue (`POST /observe`, `/act`).
+
+## Author
+
+Built by **Kei 🌸** for **bobonsam** — [bobonsam.github.io](https://bobonsam.github.io)
+
+Originally written for the make.fun Werewolf bounty. The entry wasn't submitted (the competition's transcript/bundle authorship gate blocked it), so it's published here as a portfolio project.
